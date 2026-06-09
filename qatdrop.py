@@ -1,7 +1,6 @@
 import numpy as np
 from numba import njit
 
-# (Keep your PIECES dictionary at the top as it was)
 PIECES = {
     'I': [np.array([[1, 1, 1, 1]]), np.array([[1],[1],[1],[1]])],
     'O': [np.array([[1, 1], [1, 1]])],
@@ -60,7 +59,6 @@ def jit_simulate(board, shape, column):
 
 @njit
 def jit_evaluate(board):
-    """Fastmon V1.0: Aggressive Stacking Heuristics"""
     heights = np.zeros(10)
     holes = 0
     
@@ -81,23 +79,20 @@ def jit_evaluate(board):
         if h > max_h:
             max_h = h
 
-    # 1. DANGER ZONE (Above 13)
     ceiling_penalty = 0.0
     if max_h > 13:
         ceiling_penalty = (max_h - 13) * 5000.0 
 
-    # 2. THE WELL (Column 9) - Only enforced when low
     well_penalty = 0.0
     tetris_ready_rows = 0
     if max_h <= 13:
-        well_penalty = heights[9] * 100.0 # Stricter well enforcement
+        well_penalty = heights[9] * 100.0 
         for r in range(20):
             row_sum = 0
             for c in range(9): row_sum += board[r, c]
             if row_sum == 9 and board[r, 9] == 0:
                 tetris_ready_rows += 1
 
-    # 3. I-DEPENDENCY (3-deep valleys)
     i_dep_penalty = 0.0
     for c in range(10):
         h_curr = heights[c]
@@ -112,10 +107,10 @@ def jit_evaluate(board):
         bumpiness += abs(heights[i] - heights[i+1])
 
     score = (
-        (holes * -1500.0) +            # Holes are now even more expensive
+        (holes * -1500.0) +           
         (well_penalty * -1.0) +
-        (tetris_ready_rows * 200.0) +  # Higher reward for building the 9-0 stack
-        (bumpiness * -15.0) +          # Extreme flatness requirement
+        (tetris_ready_rows * 200.0) + 
+        (bumpiness * -15.0) +         
         (agg_height * -2.0) +           
         (ceiling_penalty * -1.0) +
         (i_dep_penalty * -1.0)
@@ -127,7 +122,6 @@ def get_best_move(board, current_piece, next_queue):
     p2 = next_queue[0] if len(next_queue) > 0 and next_queue[0] in PIECES else 'I'
     p3 = next_queue[1] if len(next_queue) > 1 and next_queue[1] in PIECES else 'I'
 
-    # Check current max height
     current_max_h = 0
     for c in range(10):
         filled = np.where(board[:, c] > 0)[0]
@@ -143,17 +137,16 @@ def get_best_move(board, current_piece, next_queue):
         for c1 in range(11 - shape1.shape[1]):
             b1, lines1 = jit_simulate(board, shape1, c1)
             
-            # --- V1.0 AGGRESSIVE REWARD LOGIC ---
             reward1 = 0
             if lines1 == 4: 
-                reward1 = 2000 # Double reward for Tetris
+                reward1 = 2000 
             elif lines1 > 0:
                 if current_max_h < 10:
-                    reward1 = -100 # MASSIVE penalty for singles/doubles when low
+                    reward1 = -100 
                 elif current_max_h > 13:
-                    reward1 = 500  # Survival mode
+                    reward1 = 500  
                 else:
-                    reward1 = -10  # Standard mid-game discipline
+                    reward1 = -10  
             
             score1 = jit_evaluate(b1) + reward1
             candidates.append((b1, (r1, c1), score1))
@@ -166,7 +159,6 @@ def get_best_move(board, current_piece, next_queue):
             for c2 in range(11 - shape2.shape[1]):
                 b2, lines2 = jit_simulate(b1, shape2, c2)
                 
-                # Apply same logic to lookahead
                 if lines2 == 4: r2_val = 2000
                 elif lines2 > 0:
                     r2_val = -100 if current_max_h < 10 else (500 if current_max_h > 13 else -10)
