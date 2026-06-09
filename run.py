@@ -100,4 +100,4 @@ def run_monte():
             time.sleep(0)
 
 if __name__ == "__main__":
-    run()
+    run_monte()
