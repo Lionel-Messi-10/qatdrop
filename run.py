@@ -11,7 +11,6 @@ last_block_count = 0
 last_next_q = []
 current_piece = "I"
 
-# Standard Piece Definitions
 PIECES = {
     'I': [np.array([[1, 1, 1, 1]]), np.array([[1],[1],[1],[1]])],
     'O': [np.array([[1, 1], [1, 1]])],
@@ -22,13 +21,9 @@ PIECES = {
     'L': [np.array([[0, 0, 1], [1, 1, 1]]), np.array([[1, 0], [1, 0], [1, 1]]), np.array([[1, 1, 1], [1, 0, 0]]), np.array([[1, 1], [0, 1], [0, 1]])]
 }
 
-# Standard Guideline Spawn Columns (0-indexed)
-# Most pieces spawn at index 3. O-piece spawns at 4.
 SPAWN_COL = {
     'I': 3, 'O': 4, 'T': 3, 'J': 3, 'L': 3, 'S': 3, 'Z': 3
 }
-
-# Controller Settings
 
 
 FINESSE_DATA = {
@@ -47,24 +42,18 @@ def execute_move_finesse(rotation_idx, target_col, piece_type):
     and verified rotation offsets.
     """
     pyautogui.PAUSE = 0.06+random.random()  /10
-    # --- 1. ROTATE FIRST ---
-    # Using your specific keybinds
     if rotation_idx == 1:
-        pyautogui.press('up')    # CW
+        pyautogui.press('up')    
     elif rotation_idx == 2:
-        pyautogui.press('capslock')     # 180
+        pyautogui.press('capslock')     
     elif rotation_idx == 3:
-        pyautogui.press('down')  # CCW
+        pyautogui.press('down')  
 
-    # --- 2. CALCULATE OFFSET ---
-    # Get where the leftmost block is located AFTER the rotation
     if piece_type in FINESSE_DATA:
         current_left_col = FINESSE_DATA[piece_type][rotation_idx]
     else:
-        current_left_col = 3 # Fallback
+        current_left_col = 3 
 
-    # --- 3. DIRECT HORIZONTAL MOVE ---
-    # Calculate distance from the current rotated position to the target
     diff = target_col - current_left_col
     
     if diff < 0:
@@ -74,7 +63,6 @@ def execute_move_finesse(rotation_idx, target_col, piece_type):
         for _ in range(diff):
             pyautogui.press('right')
 
-    # --- 4. HARD DROP ---
     pyautogui.press('space')
 
 def run_monte():
@@ -90,27 +78,22 @@ def run_monte():
             
             current_block_count = np.sum(board)
             
-            # Detect piece landing or queue shift
             if current_block_count != last_block_count or (next_q and next_q != last_next_q):
                 
-                # Small buffer to ensure the piece has fully spawned
                 time.sleep(0)
                 board = get_board_state(sct)
                 
-                # Identify the piece that was just at the head of the queue
                 current_p = last_next_q[0] if last_next_q else "T"
                 
                 if current_p in ["Empty", "Unknown"]:
                     last_next_q = next_q.copy()
                     continue
 
-                # Calculate the best move
                 rot_idx, target_col = get_best_move(board, current_p, next_q)
                 
                 print(f"Finesse Move: {current_p} to Col {target_col} (Rot {rot_idx})")
                 execute_move_finesse(rot_idx, target_col, current_p)
                 
-                # Update tracking state
                 last_block_count = np.sum(get_board_state(sct))
                 last_next_q = next_q.copy()
                 
