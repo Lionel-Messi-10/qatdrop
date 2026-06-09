@@ -3,12 +3,11 @@ import numpy as np
 from mss import mss
 import os
 
-# 1. FINAL CALIBRATED COORDINATES
+# put the coords you come up with here
 BOARD_ROI = {'top': 250, 'left': 1040, 'width': 480, 'height': 940}
 NEXT_ROI = {'top': 290, 'left': 1575, 'width': 200, 'height': 700}
 HOLD_ROI = {'top': 310, 'left': 880, 'width': 80, 'height': 80}
 
-# 2. UPDATED COLOR SIGNATURES (BGR)
 COLOR_MAP = {
     'I': [131, 180, 50],   
     'J': [178, 51, 58],     
@@ -42,19 +41,16 @@ def filter_floating_noise(raw_board):
     cleaned_board = np.zeros_like(raw_board)
     visited = np.zeros((rows, cols), dtype=bool)
     
-    # We start our search from every block on the bottom row (row 19)
     stack = []
     for c in range(cols):
         if raw_board[rows-1, c] == 1:
             stack.append((rows-1, c))
             visited[rows-1, c] = True
 
-    # Standard Depth-First Search (DFS)
     while stack:
         r, c = stack.pop()
         cleaned_board[r, c] = 1
 
-        # Check 4-way neighbors (Up, Down, Left, Right)
         for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nr, nc = r + dr, c + dc
             if 0 <= nr < rows and 0 <= nc < cols:
@@ -109,10 +105,7 @@ if __name__ == "__main__":
                 next_q = get_next_queue(sct)
                 hold = get_hold_piece(sct)
                 
-                # Logic: If the queue has shifted, the previous first piece is now 'Current'
-                # We check if the first piece of the queue has changed to determine a spawn
                 if next_q[0] != last_next_queue[0] and next_q[0] != "Empty":
-                    # Only update if the queue didn't just become empty (e.g. game over/pause)
                     if last_next_queue[0] != "Empty":
                         current_piece = last_next_queue[0]
                     last_next_queue = next_q.copy()
